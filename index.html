@@ -845,7 +845,8 @@ area.getBoundingClientRect();
     windowHeight: 1050
   });
 
-  const img = canvas.toDataURL("image/png");
+  const img = canvas.toDataURL("image/jpeg", 0.85);
+
 
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({
@@ -958,6 +959,7 @@ document.getElementById("copyTitle").addEventListener("click", () => {
 </script>
 </body>
 </html>
+
 
 
 
