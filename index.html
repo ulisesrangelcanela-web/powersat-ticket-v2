@@ -164,7 +164,7 @@
     top:0; left:0;
     width:100%; height:100%;
     background:rgba(0,0,0,0.5);
-    backdrop-filter:blur(4px);
+    
     z-index:9999;
     overflow:auto;
     padding:20px;
@@ -303,11 +303,12 @@
     <div id="ticketCanvas" class="ticket-canvas">
 
       <img
-  id="ticketImg"
-  class="ticket-bg"
-  src="formatoOriginal.jpeg"
-  crossorigin="anonymous"
-/>
+      id="ticketImg"
+      class="ticket-bg"
+      src="formatoOriginal.jpeg"
+        crossorigin="anonymous"
+      />
+
 
 
       <div id="folioOverlay" class="overlay"></div>
@@ -735,7 +736,7 @@ locBtn.addEventListener("click", () => {
       alert("GPS error: " + err.message);
     },
     {
-      enableHighAccuracy: false, // 👈 CLAVE para iOS
+      enableHighAccuracy: false, // CLAVE para iOS
       timeout: 15000,
       maximumAge: 0
     }
@@ -826,12 +827,16 @@ generatePDF.addEventListener("click", async () => {
   area.scrollTop = 0;
   area.scrollLeft = 0;
 
-  // 🔑 FIX CRÍTICO PARA SAFARI / iOS
+  // FIX CRÍTICO PARA SAFARI / iOS
 area.getBoundingClientRect();
 
   /* ===== SCALE ADAPTATIVO ===== */
-  const scale = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 1.5 : 2;
+  const scale = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 1 : 2;
 
+  //FIX SAFARI: asegurar que el modal NO existe al renderizar
+  document.getElementById("trelloModal").style.display = "none";
+  
+  
   const canvas = await html2canvas(area, {
     scale,
     useCORS: true,
@@ -857,10 +862,16 @@ const url = URL.createObjectURL(blob);
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 if (isIOS) {
-  // iOS: abrir PDF en nueva pestaña (NO descarga)
-  window.open(url, "_blank");
+  // iOS Safari FIX: usar <a> real en lugar de window.open
+  const link = document.createElement("a");
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 } else {
-  // Desktop: descarga normal
+  // Desktop / Android: descarga normal
   const a = document.createElement("a");
   a.href = url;
   a.download = `${fileName}.pdf`;
@@ -868,6 +879,7 @@ if (isIOS) {
   a.click();
   document.body.removeChild(a);
 }
+
 
 // liberar memoria después
 setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -946,6 +958,7 @@ document.getElementById("copyTitle").addEventListener("click", () => {
 </script>
 </body>
 </html>
+
 
 
 
