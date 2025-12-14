@@ -850,12 +850,15 @@ area.getBoundingClientRect();
 
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({
-    orientation: "portrait",
-    unit: "pt",
-    format: [820, 1050]
-  });
+  orientation: "portrait",
+  unit: "pt",
+  format: "a4"
+});
 
-  pdf.addImage(img, "PNG", 0, 0, 820, 1050);
+const pdfWidth = 595.28;
+const pdfHeight = 841.89;
+
+pdf.addImage(img, "JPEG", 0, 0, pdfWidth, pdfHeight);
 
   const blob = pdf.output("blob");
 const url = URL.createObjectURL(blob);
@@ -863,16 +866,8 @@ const url = URL.createObjectURL(blob);
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 if (isIOS) {
-  // iOS Safari FIX: usar <a> real en lugar de window.open
-  const link = document.createElement("a");
-  link.href = url;
-  link.target = "_blank";
-  link.rel = "noopener";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  window.location.href = url;
 } else {
-  // Desktop / Android: descarga normal
   const a = document.createElement("a");
   a.href = url;
   a.download = `${fileName}.pdf`;
@@ -880,6 +875,7 @@ if (isIOS) {
   a.click();
   document.body.removeChild(a);
 }
+
 
 
 // liberar memoria después
@@ -959,6 +955,7 @@ document.getElementById("copyTitle").addEventListener("click", () => {
 </script>
 </body>
 </html>
+
 
 
 
