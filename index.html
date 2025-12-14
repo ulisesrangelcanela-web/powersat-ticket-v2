@@ -147,13 +147,13 @@
     overflow-x: auto;
   }
   .ticket-canvas {
-    transform: scale(0.52);
-    transform-origin: top left;
-    width: 820px;
-    height: auto;              /* ✅ CLAVE */
-    aspect-ratio: 820 / 1050;  /* ✅ MISMA PROPORCIÓN QUE EL ARCHIVO */
-    margin-bottom: 10px;       /* ✅ SIN CUADRO BLANCO */
-  }
+  width: 820px;
+  height: 1050px;
+  background: #fff;
+  border: 1px solid #ccc;
+  position: relative;
+  overflow: hidden;
+ }
 }
 
 
@@ -826,6 +826,9 @@ generatePDF.addEventListener("click", async () => {
   area.scrollTop = 0;
   area.scrollLeft = 0;
 
+  // 🔑 FIX CRÍTICO PARA SAFARI / iOS
+area.getBoundingClientRect();
+
   /* ===== SCALE ADAPTATIVO ===== */
   const scale = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 1.5 : 2;
 
@@ -943,5 +946,6 @@ document.getElementById("copyTitle").addEventListener("click", () => {
 </script>
 </body>
 </html>
+
 
 
