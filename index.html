@@ -300,7 +300,13 @@
   <div class="panel preview-wrap">
     <div id="ticketCanvas" class="ticket-canvas">
 
-      <img id="ticketImg" class="ticket-bg" src="" />
+      <img
+  id="ticketImg"
+  class="ticket-bg"
+  src="formatoOriginal.jpeg"
+  crossorigin="anonymous"
+/>
+
 
       <div id="folioOverlay" class="overlay"></div>
       <div id="stateCodeOverlay" class="overlay"></div>
@@ -337,8 +343,7 @@
 </div>
 
 <script>
-/* Ruta por defecto */
-const DEFAULT_BG_PATH = "formatoOriginal.jpeg";
+
 
 
 const EARTH_RADIUS_MI = 3958.8;
@@ -513,8 +518,8 @@ function updateWCByService() {
 /* Cargar formato original y valores iniciales */
 window.addEventListener("DOMContentLoaded", () => {
 
-  ticketImg.src = DEFAULT_BG_PATH;
-  ticketImg.style.display = "block";
+  
+ 
 
 
   // Construir lista inicial (GENERAL, porque customer=EOG)
@@ -555,15 +560,12 @@ rtManual.addEventListener("input", () => {
   rtManual.dataset.autofilled = "false";
 });
 
-/* Subir formato */
 bgInput.addEventListener('change', e => {
   const f = e.target.files?.[0];
-  if (!f) {
-    ticketImg.src = DEFAULT_BG_PATH;
-    return;
-  }
+  if (!f) return;
   ticketImg.src = URL.createObjectURL(f);
 });
+
 
 /* Fecha MDY */
 function formatDateMDY(v){
@@ -691,43 +693,53 @@ function computeAndMaybeSetRT(changedByWorkAddr=false){
 }));
 
 /* Obtener ubicación */
+/* Obtener ubicación (FIX iOS compatible) */
 locBtn.addEventListener("click", () => {
-  if (!navigator.geolocation){
-    alert("GPS no soportado.");
+
+  if (!("geolocation" in navigator)) {
+    alert("GPS not supported on this device.");
     return;
   }
 
-  navigator.geolocation.getCurrentPosition(async pos => {
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
 
-    const lat = pos.coords.latitude;
-    const lon = pos.coords.longitude;
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
 
-    try{
-      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1`;
-      const resp = await fetch(url);
-      const data = await resp.json();
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1`;
+        const resp = await fetch(url);
+        const data = await resp.json();
 
-      const addr = data.address || {};
-      const state = addr.state || "";
-      const county = addr.county || addr.municipality || addr.region || "";
+        const addr = data.address || {};
+        const state = addr.state || "";
+        const county = addr.county || addr.municipality || addr.region || "";
 
-      workAddr.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-      parishInput.value = county;
-      stateCodeInput.value = stateToCode(state) || state;
+        workAddr.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+        parishInput.value = county;
+        stateCodeInput.value = stateToCode(state) || state;
 
-      computeAndMaybeSetRT();
-      syncOverlays();
+        computeAndMaybeSetRT();
+        syncOverlays();
 
-    } catch(e){
-      console.error(e);
-      alert("No se pudo obtener dirección desde GPS.");
+      } catch (e) {
+        console.error(e);
+        alert("Could not resolve address from GPS.");
+      }
+
+    },
+    (err) => {
+      alert("GPS error: " + err.message);
+    },
+    {
+      enableHighAccuracy: false, // 👈 CLAVE para iOS
+      timeout: 15000,
+      maximumAge: 0
     }
-
-  }, err => alert("No se pudo obtener GPS: " + err.message), {
-    enableHighAccuracy:true,
-    timeout:10000
-  });
+  );
 });
+
 
 /* Botón: generar texto estilo Trello/Calendar */
 fillBtn.addEventListener("click", () => {
@@ -789,51 +801,47 @@ generatePDF.addEventListener("click", async () => {
   const cust   = customerInput.value.trim().replace(/\s+/g," ");
   const well   = wellInput.value.trim().replace(/\s+/g," ");
   const srvOpt = serviceSelect.options[serviceSelect.selectedIndex];
-  const srv = srvOpt ? (srvOpt.dataset.label || "").replace(/\s+/g," ") : "";
+  const srv    = srvOpt ? (srvOpt.dataset.label || "").replace(/\s+/g," ") : "";
   let desc     = descInput.value.trim().split(/\s+/).slice(0,3).join(" ");
 
   let wcStatus = "NC";
   if (wcInput.value.trim() !== "" && wcInput.value.trim().toUpperCase() !== "N/C") {
-      wcStatus = "WC";
+    wcStatus = "WC";
   }
 
-  const fileName = `${state}-${folio} ${cust} ${well} ${srv} ${desc} ${wcStatus}`.toUpperCase();
-
-const blob = pdf.output("blob");
-const url = URL.createObjectURL(blob);
-
-const a = document.createElement("a");
-a.href = url;
-a.download = `${fileName}.pdf`;
-document.body.appendChild(a);
-a.click();
-document.body.removeChild(a);
-
-URL.revokeObjectURL(url);
-
+  const fileName =
+    `${state}-${folio} ${cust} ${well} ${srv} ${desc} ${wcStatus}`.toUpperCase();
 
   const area = document.getElementById("ticketCanvas");
-  const canvas = await html2canvas(area, { scale:2, useCORS:true });
+
+  const canvas = await html2canvas(area, {
+    scale: 2,
+    useCORS: true
+  });
+
   const img = canvas.toDataURL("image/png");
 
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({
-    unit:"px",
-    format:[canvas.width, canvas.height]
+    unit: "px",
+    format: [canvas.width, canvas.height]
   });
 
-  pdf.addImage(img,"PNG",0,0,canvas.width,canvas.height);
+  pdf.addImage(img, "PNG", 0, 0, canvas.width, canvas.height);
 
-  //  Crear blob manualmente
   const blob = pdf.output("blob");
   const url = URL.createObjectURL(blob);
 
-// Mostrar el PDF en ventana nueva
-pdfWindow.location.href = url;
-pdfWindow.document.title = `${fileName}.pdf`;
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${fileName}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 
-
-});   // ← AQUÍ SE CIERRA EL BLOQUE DEL PDF (faltaba)
+  URL.revokeObjectURL(url);
+});
+   // ← AQUÍ SE CIERRA EL BLOQUE DEL PDF (faltaba)
 
 
 
@@ -913,4 +921,5 @@ document.getElementById("copyTitle").addEventListener("click", () => {
 </script>
 </body>
 </html>
+
 
