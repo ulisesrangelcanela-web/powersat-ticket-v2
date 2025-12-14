@@ -129,31 +129,33 @@
 
   /* ======== RESPONSIVE PARA CELULARES ======== */
   @media (max-width: 768px) {
-    body {
-      margin: 8px;
-      overflow-x: hidden;
-    }
-    .container {
-      flex-direction: column;
-      gap: 20px;
-    }
-    .form {
-      width: 100% !important;
-      max-height: unset !important;
-    }
-    .preview-wrap {
-      width: 100% !important;
-      max-width: 100% !important;
-      overflow-x: auto;
-    }
-    .ticket-canvas {
-      transform: scale(0.52);
-      transform-origin: top left;
-      width: 820px;
-      height: 1050px;
-      margin-bottom: 30px;
-    }
+  body {
+    margin: 8px;
+    overflow-x: hidden;
   }
+  .container {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .form {
+    width: 100% !important;
+    max-height: unset !important;
+  }
+  .preview-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto;
+  }
+  .ticket-canvas {
+    transform: scale(0.52);
+    transform-origin: top left;
+    width: 820px;
+    height: auto;              /* ✅ CLAVE */
+    aspect-ratio: 820 / 1050;  /* ✅ MISMA PROPORCIÓN QUE EL ARCHIVO */
+    margin-bottom: 10px;       /* ✅ SIN CUADRO BLANCO */
+  }
+}
+
 
   /* ===== Modal Responsive Fix ===== */
   #trelloModal {
@@ -941,4 +943,5 @@ document.getElementById("copyTitle").addEventListener("click", () => {
 </script>
 </body>
 </html>
+
 
