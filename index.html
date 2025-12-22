@@ -577,6 +577,17 @@ function formatDateMDY(v){
   return `${p[1]}-${p[2]}-${p[0]}`;
 }
 
+  /* Hora militar HHMM desde input type="time" (HH:MM) */
+function timeToHHMM(v){
+  if(!v) return "";
+  const m = v.match(/^(\d{1,2}):(\d{2})$/);
+  if(!m) return "";
+  const hh = m[1].padStart(2,"0");
+  const mm = m[2];
+  return hh + mm; // "08:00" -> "0800", "20:00" -> "2000"
+}
+
+
 /* Resolver siglas */
 function stateToCode(n){
   if(!n) return "";
@@ -655,8 +666,8 @@ if (!hasService) {
 }
 
 
-  aOverlay.textContent  = aInput.value  ? `A- ${aInput.value}` : "";
-  dOverlay.textContent  = dInput.value  ? `D- ${dInput.value}` : "";
+  aOverlay.textContent  = aInput.value ? `A- ${timeToHHMM(aInput.value)}` : "";
+  dOverlay.textContent  = dInput.value ? `D- ${timeToHHMM(dInput.value)}` : "";
   rtOverlay.textContent = rtManual.value ? `R/T- ${rtManual.value} MILES` : "";
 }
 
@@ -763,8 +774,8 @@ fillBtn.addEventListener("click", () => {
     ? "N/C"
     : `W/C - $${wcInput.value}`;
 
-  const aTime = aInput.value ? `A- ${aInput.value}` : "";
-  const dTime = dInput.value ? `D- ${dInput.value}` : "";
+  const aTime = aInput.value ? `A- ${timeToHHMM(aInput.value)}` : "";
+  const dTime = dInput.value ? `D- ${timeToHHMM(dInput.value)}` : "";
   const rt    = rtManual.value ? `R/T- ${rtManual.value} MILES` : "";
   const tech  = techInput.value || "";
 
@@ -952,4 +963,5 @@ document.getElementById("copyTitle").addEventListener("click", () => {
 </script>
 </body>
 </html>
+
 
