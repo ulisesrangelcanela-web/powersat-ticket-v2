@@ -27,7 +27,7 @@
 #ticketApp .container{display:flex; gap:18px; align-items:flex-start;}
 #ticketApp .panel{background:var(--card); padding:12px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.06);}
 #ticketApp .panel.preview-wrap{ padding:0; border:none; box-shadow:none; }
-#ticketApp .form{width:380px; max-height:86vh; overflow:auto;}
+#ticketApp .form{width:380px; max-height:none; overflow:visible;}
 #ticketApp label{ display:block; margin-top:8px; font-size:12px; font-weight:600; letter-spacing:0.4px; color:#555; }
 
 #ticketApp input[type="text"],
@@ -169,7 +169,8 @@
      PROJECT 2 CSS (scoped)
      ========================= -->
 <style>
-#jsaApp html, #jsaApp body{ -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html, body{ -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
 
 #jsaApp .topbar{display:flex; gap:12px; align-items:center; margin-bottom:10px; flex-wrap:wrap;}
 #jsaApp .container{display:flex; gap:18px; align-items:flex-start;}
@@ -786,10 +787,123 @@ JOHN D.
   rigInput.addEventListener('focus', e => e.target.select());
   techInput.addEventListener('focus', e => e.target.select());
 
+        // ==========================
+// BRIDGE: Form1 -> Form2
+// ==========================
+const jsaSiteInput   = document.getElementById("jsa_siteInput");
+const jsaDateInput   = document.getElementById("jsa_dateInput");
+const jsaLeaderName  = document.getElementById("jsa_leaderName");
+const jsaTeamNames   = document.getElementById("jsa_teamNames");
+const jsaServiceSelect = document.getElementById("jsa_serviceSelect");
+
+         function mapServiceToJSA(srcCode){
+  if(!srcCode) return "";
+  const c = srcCode.toUpperCase().trim();
+
+  // -------------------------
+  // OFFICE TRAILER
+  // -------------------------
+  if (c.startsWith("OFC_")) {
+
+    // CHECK DIRECTV - OFFICE TRAILER -> SITE CHECK DIRECTV
+    if (c.includes("CHECK_DTV") || c.includes("DIRECTV")) return "SITE_CHECK_DIRECTV";
+
+    // SERVICE CALL / CHECK NET - OFFICE TRAILER -> SITE CHECK NET,HIBOOST,STARLINK
+    if (c.includes("SERVICE_CALL") || c.includes("CHECK_NET")) return "SITE_CHECK_NET";
+
+    // NEW RIG UP / RIG UP - OFFICE TRAILER -> OFC_RIG_UP
+    if (c.includes("NEW_RIG_UP") || c === "OFC_RIG_UP") return "OFC_RIG_UP";
+
+    // RIG OUT / RELEASE / RIG DOWN / RIG MOVE - OFFICE TRAILER -> OFC_RIG_DOWN
+    if (c.includes("RIG_OUT") || c.includes("RELEASE") || c.includes("RIG_DOWN") || c.includes("RIG_MOVE"))
+      return "OFC_RIG_DOWN";
+
+    return "";
+  }
+
+  // -------------------------
+  // GENERATOR
+  // -------------------------
+  if (c.startsWith("GEN_")) {
+
+    // SERVICE CALL - GENERATOR -> SITE CHECK GENERATOR
+    if (c.includes("SERVICE_CALL")) return "SITE_CHECK_GENERATOR";
+
+    // NEW RIG UP / RIG UP - GENERATOR -> GEN_RIG_UP
+    if (c.includes("NEW_RIG_UP") || c === "GEN_RIG_UP") return "GEN_RIG_UP";
+
+    // RIG OUT / RELEASE / RIG DOWN / RIG MOVE - GENERATOR -> GEN_RIG_DOWN
+    if (c.includes("RIG_OUT") || c.includes("RELEASE") || c.includes("RIG_DOWN") || c.includes("RIG_MOVE"))
+      return "GEN_RIG_DOWN";
+
+    return "";
+  }
+
+  // -------------------------
+  // TOWER
+  // -------------------------
+  if (c.startsWith("TWR_")) {
+
+    // SERVICE CALL / CHECK NET / SITE CHECK - TOWER -> SITE CHECK TOWER (new)
+    if (c.includes("SERVICE_CALL") || c.includes("CHECK_NET") || c.includes("SITE_CHECK"))
+      return "SITE_CHECK_TOWER";
+
+    // NEW RIG UP / RIG UP - TOWER -> TWR_RIG_UP
+    if (c.includes("NEW_RIG_UP") || c === "TWR_RIG_UP") return "TWR_RIG_UP";
+
+    // RIG OUT / RELEASE / RIG DOWN / TILT DOWN & UP - TOWER -> TWR_RIG_DOWN
+    if (c.includes("RIG_OUT") || c.includes("RELEASE") || c.includes("RIG_DOWN") || c.includes("TILT"))
+      return "TWR_RIG_DOWN";
+
+    return "";
+  }
+
+  // -------------------------
+  // RIGS
+  // -------------------------
+  if (c.startsWith("RIG_")) {
+
+    // SERVICE CALL / CHECK NET / CHECK SHACK BOOSTER / SITE CHECK / SPECIAL SERVICES -> SITE CHECK NET
+    if (
+      c.includes("SERVICE_CALL") ||
+      c.includes("CHECK_NET") ||
+      c.includes("CHECK_SHACK") ||
+      c.includes("SITE_CHECK") ||
+      c.includes("SPECIAL")
+    ) return "SITE_CHECK_NET";
+
+    // NEW RIG UP / RIG UP / NEW INTERCOM / NEW MICRO / NEW SHACK -> RIG_RIG_UP
+    if (
+      c.includes("NEW_RIG_UP") ||
+      c === "RIG_RIG_UP" ||
+      c.includes("NEW_INTERCOM") ||
+      c.includes("NEW_MICRO") ||
+      c.includes("NEW_SHACK")
+    ) return "RIG_RIG_UP";
+
+    // RIG DOWN / RIG OUT / RELEASE / RIG UP AFTER MOVE / RIG DOWN FOR MOVE -> RIG_RIG_DOWN
+    if (
+      c.includes("RIG_DOWN") ||
+      c.includes("RIG_OUT") ||
+      c.includes("RELEASE") ||
+      c.includes("UP_AFTER_MOVE") ||
+      c.includes("DOWN_FOR_MOVE")
+    ) return "RIG_RIG_DOWN";
+
+    return "";
+  }
+
+  return "";
+}
+
+
+
   serviceSelect.addEventListener("change", () => {
-    updateWCByService();
-    syncOverlays();
-  });
+  updateWCByService();
+  syncOverlays();
+  pushToJSA();
+});
+
 
   predComment.addEventListener("change", () => {
     if (predComment.value) {
@@ -978,6 +1092,76 @@ ${tech}`.trim();
         alert("TITLE COPIED:\n" + title);
       });
   });
+
+
+
+function pushToJSA(){
+  // WELL NAME -> WELL / SITE
+  if (jsaSiteInput) {
+    jsaSiteInput.value = (wellInput.value || "").toUpperCase();
+    jsaSiteInput.dispatchEvent(new Event("input", { bubbles:true }));
+    jsaSiteInput.dispatchEvent(new Event("change", { bubbles:true }));
+  }
+
+  // DATE -> DATE
+  if (jsaDateInput) {
+    jsaDateInput.value = dateInput.value || "";
+    jsaDateInput.dispatchEvent(new Event("input", { bubbles:true }));
+    jsaDateInput.dispatchEvent(new Event("change", { bubbles:true }));
+  }
+
+  // TECHNICIAN -> TASK LEADER - NAME
+  if (jsaLeaderName) {
+    jsaLeaderName.value = (techInput.value || "").toUpperCase();
+    jsaLeaderName.dispatchEvent(new Event("input", { bubbles:true }));
+    jsaLeaderName.dispatchEvent(new Event("change", { bubbles:true }));
+  }
+
+  // TECHNICIAN -> WORK TEAM NAMES (modo autofill)
+if (jsaTeamNames) {
+  const tech = (techInput.value || "").toUpperCase().trim();
+  const current = (jsaTeamNames.value || "").trim();
+
+  // Si aún no se ha tocado manualmente, o estaba vacío, mantenlo sincronizado
+  const isAuto = (jsaTeamNames.dataset.autofill === "true");
+
+  if (( !current || isAuto ) && tech) {
+    jsaTeamNames.value = tech;
+    jsaTeamNames.dataset.autofill = "true";
+    jsaTeamNames.dispatchEvent(new Event("input", { bubbles:true }));
+    jsaTeamNames.dispatchEvent(new Event("change", { bubbles:true }));
+  }
+}
+         // SERVICE TYPE (Form1) -> SERVICE TYPE (REFERENCE) (Form2)
+  if (jsaServiceSelect) {
+    const srcCode = (serviceSelect.value || "").toUpperCase().trim();
+    const mapped = mapServiceToJSA(srcCode);
+
+    if (mapped) {
+      jsaServiceSelect.value = mapped;
+      jsaServiceSelect.dispatchEvent(new Event("input",  { bubbles:true }));
+      jsaServiceSelect.dispatchEvent(new Event("change", { bubbles:true }));
+      
+    }
+  }
+
+
+}
+
+// listeners
+wellInput.addEventListener("input", pushToJSA);
+wellInput.addEventListener("blur", pushToJSA);
+
+
+dateInput.addEventListener("change", pushToJSA);
+dateInput.addEventListener("blur", pushToJSA);
+
+techInput.addEventListener("input", pushToJSA);
+techInput.addEventListener("blur", pushToJSA);
+
+window.addEventListener("DOMContentLoaded", pushToJSA);
+
+
 })();
 </script>
 
@@ -1007,10 +1191,13 @@ ${tech}`.trim();
       { code:"RIG_RIG_UP",   label:"RIG UP - RIGS" },
       { code:"RIG_RIG_DOWN", label:"RIG DOWN - RIGS" },
     ]},
-    { groupLabel: "--GENERAL--", items: [
-      { code:"SITE_CHECK_NET",     label:"SITE CHECK - NET, HIBOOST, STARLINK" },
-      { code:"SITE_CHECK_DIRECTV", label:"SITE CHECK - DIRECTV" },
-    ]},
+        { groupLabel: "--GENERAL--", items: [
+      { code:"SITE_CHECK_NET",      label:"SITE CHECK - NET, HIBOOST, STARLINK" },
+      { code:"SITE_CHECK_DIRECTV",  label:"SITE CHECK - DIRECTV" },
+      { code:"SITE_CHECK_GENERATOR",label:"SITE CHECK - GENERATOR" },
+      { code:"SITE_CHECK_TOWER", label:"SITE CHECK - TOWER" },
+   ]},
+
   ];
 
   // === TEMPLATES (igual que tu proyecto 2) ===
@@ -1160,6 +1347,33 @@ ${tech}`.trim();
         ["5","USE METER/RECEIVER; VERIFY LEVELS","ELECTRICAL SHOCK","CHECK LEADS/PROBES; SAFE TEST POINTS; KEEP CABLES CONTROLLED","TECH","N"],
       ]
     },
+    "SITE_CHECK_GENERATOR": {
+     ppePreset: "GEN",
+     task: "SITE CHECK - GENERATOR (CHECK WATER PUMP, POWER OUTPUT, DIESEL LEVEL/LEAKS, AND GENERAL CONDITION)",
+     injury: "ELECTRICAL SHOCK / FIRE / STRUCK-BY / HAND INJURY",
+     steps: [
+     ["1","VISUAL INSPECTION AROUND UNIT","STRUCK-BY / PINCH / SLIP","KEEP CLEAR OF MOVING PARTS; HOUSEKEEP; CONES IF NEEDED","TECH","N"],
+     ["2","CHECK WATER PUMP/HOSES/FITTINGS","SLIP / SPLASH / WHIP","DEPRESSURIZE; EYE/GLOVES; VERIFY TIGHT FITTINGS","TECH","N"],
+     ["3","CHECK OUTPUT/LOAD INDICATIONS","ELECTRICAL SHOCK","DRY HANDS; DO NOT OPEN LIVE PANELS; USE METERS SAFELY","TECH","N"],
+     ["4","CHECK DIESEL LEVEL/LEAKS","FIRE / SLIP","NO SMOKING; CLEAN SPILLS; REPORT LEAKS","TECH","N"],
+  ]
+    },
+      "SITE_CHECK_TOWER": {
+  ppePreset: "TOWER",
+  task: "SITE CHECK - TOWER (VISUAL INSPECTION, POWER/CONTROL CHECK, STRUCTURE/OUTRIGGERS, LIGHTS/CAMERAS, CABLES)",
+  injury: "STRUCK-BY / CRUSH / ELECTRICAL SHOCK / FALL",
+  steps: [
+    ["1","ARRIVE; 360 WALKDOWN; SET SAFE ZONE","STRUCK-BY / VEH TRAFFIC / SLIP","PARK SAFE; CONES IF NEEDED; WATCH TRAFFIC; HOUSEKEEP","TECH","N"],
+    ["2","VISUAL CHECK: OUTRIGGERS/JACKS/LEVEL","PINCH / CRUSH / TRIP","KEEP HANDS CLEAR; CHECK PINS/LOCKS; DO NOT ADJUST IF UNSAFE","TECH","N"],
+    ["3","CHECK MAST/SECTIONS/CABLE ROUTE","STRUCK-BY / ENTANGLEMENT","KEEP CLEAR OF MOVING PARTS; VERIFY CABLES NOT SNAGGED; STOP IF DAMAGE","TECH","N"],
+    ["4","CHECK POWER FEED/PLUGS/BREAKERS","ELECTRICAL SHOCK / ARC","DRY HANDS; GLOVES; VISUAL ONLY ON LIVE; REPORT DAMAGED CORDS","TECH","N"],
+    ["5","CHECK CONTROLLER/MOTORS FUNCTION","CRUSH / PINCH","ESTABLISH EXCLUSION ZONE; TEST SHORT MOVES; HANDS CLEAR; SPOTTER PRN","TECH","N"],
+    ["6","VERIFY LIGHTS/CAMERAS/COMMS (IF APPL)","FALL / TOOL DROP / ELECTRICAL","LADDER ONLY IF REQUIRED; 3-PT; TOOL CONTROL; SAFE TEST POINTS","TECH","N"],
+    ["7","DOCUMENT FINDINGS; CLEANUP; CLOSEOUT","TRIP / STRAIN","CABLE MGMT; REMOVE TRIP HAZARDS; UPDATE NOTES; REPORT ISSUES","TECH","N"],
+  ]
+},
+
+
   };
 
   // DOM
@@ -1196,6 +1410,27 @@ ${tech}`.trim();
   const tabP1 = document.getElementById("jsa_tabP1");
   const tabP2 = document.getElementById("jsa_tabP2");
   const whichHint = document.getElementById("jsa_whichHint");
+
+       // === AUTO FILL REF ATTACH (HSE REFERENCES) ===
+const REF_MAP = {
+  "OFC_RIG_UP": "SOP – OFFICE TRAILER / LOTO / ELECTRICAL SAFETY / SITE RULES",
+  "OFC_RIG_DOWN": "SOP – OFFICE TRAILER / LOTO / ELECTRICAL SAFETY / SITE RULES",
+
+  "GEN_RIG_UP": "SOP – GENERATOR / LOTO / ELECTRICAL SAFETY / FIRE SAFETY",
+  "GEN_RIG_DOWN": "SOP – GENERATOR / LOTO / ELECTRICAL SAFETY / FIRE SAFETY",
+
+  "TWR_RIG_UP": "SOP – MOBILE COMM TOWER / LOTO / ELECTRICAL SAFETY / SITE RULES",
+  "TWR_RIG_DOWN": "SOP – MOBILE COMM TOWER / LOTO / ELECTRICAL SAFETY / SITE RULES",
+
+  "RIG_RIG_UP": "SOP – RIGS / HAND TOOLS / SITE RULES",
+  "RIG_RIG_DOWN": "SOP – RIGS / HAND TOOLS / SITE RULES",
+
+  "SITE_CHECK_NET": "SOP – NETWORK / ELECTRICAL SAFETY / SITE RULES",
+  "SITE_CHECK_DIRECTV": "SOP – DIRECTV / ELECTRICAL SAFETY / SITE RULES",
+  "SITE_CHECK_GENERATOR": "SOP – GENERATOR / ELECTRICAL SAFETY / FIRE SAFETY",
+  "SITE_CHECK_TOWER": "SOP – MOBILE COMM TOWER / LOTO / ELECTRICAL SAFETY / SITE RULES"
+};
+
 
   const O = {
     company: document.getElementById("jsa_ov_company"),
@@ -1423,6 +1658,8 @@ ${tech}`.trim();
     const t = SERVICE_TEMPLATES[code];
     if(!t) return;
 
+    
+
     const DEFAULTS = {
       reviewerName: "DANNY GARCIA",
       reviewerCompany: "POWERSAT COMM USA LP",
@@ -1451,6 +1688,13 @@ ${tech}`.trim();
     refReviewed.value = "YES";
     riskModify.value  = "YES";
     riskRemains.value = "YES";
+
+      // autofill references
+    if (REF_MAP[code]) {
+    refReviewed.value = "YES";
+    refAttach.value = REF_MAP[code];
+    }
+
 
     if(t.ppePreset){
       ppePreset.value = t.ppePreset;
