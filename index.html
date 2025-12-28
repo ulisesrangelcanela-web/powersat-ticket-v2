@@ -711,11 +711,87 @@ JOHN D.
     return hh + mm;
   }
 
-  function stateToCode(n){
-    if(!n) return "";
-    const map = {"Texas":"TX","New Mexico":"NM","Nuevo México":"NM","Nuevo Leon":"NL","Nuevo León":"NL"};
-    return map[n] || "";
-  }
+        function stateToCode(stateName){
+  if(!stateName) return "";
+
+  // Normaliza: quita puntos, dobles espacios, etc.
+  const key = String(stateName)
+    .trim()
+    .replace(/\./g, "")
+    .replace(/\s+/g, " ");
+
+  const MAP = {
+    "Alabama":"AL",
+    "Alaska":"AK",
+    "Arizona":"AZ",
+    "Arkansas":"AR",
+    "California":"CA",
+    "Colorado":"CO",
+    "Connecticut":"CT",
+    "Delaware":"DE",
+    "Florida":"FL",
+    "Georgia":"GA",
+    "Hawaii":"HI",
+    "Idaho":"ID",
+    "Illinois":"IL",
+    "Indiana":"IN",
+    "Iowa":"IA",
+    "Kansas":"KS",
+    "Kentucky":"KY",
+    "Louisiana":"LA",
+    "Maine":"ME",
+    "Maryland":"MD",
+    "Massachusetts":"MA",
+    "Michigan":"MI",
+    "Minnesota":"MN",
+    "Mississippi":"MS",
+    "Missouri":"MO",
+    "Montana":"MT",
+    "Nebraska":"NE",
+    "Nevada":"NV",
+    "New Hampshire":"NH",
+    "New Jersey":"NJ",
+    "New Mexico":"NM",
+    "New York":"NY",
+    "North Carolina":"NC",
+    "North Dakota":"ND",
+    "Ohio":"OH",
+    "Oklahoma":"OK",
+    "Oregon":"OR",
+    "Pennsylvania":"PA",
+    "Rhode Island":"RI",
+    "South Carolina":"SC",
+    "South Dakota":"SD",
+    "Tennessee":"TN",
+    "Texas":"TX",
+    "Utah":"UT",
+    "Vermont":"VT",
+    "Virginia":"VA",
+    "Washington":"WA",
+    "West Virginia":"WV",
+    "Wisconsin":"WI",
+    "Wyoming":"WY",
+
+    // DC (común en reverse geocoding)
+    "District of Columbia":"DC",
+    "Washington DC":"DC",
+    "Washington D C":"DC",
+
+    // Territorios (por si te cae alguno)
+    "Puerto Rico":"PR",
+    "Guam":"GU",
+    "American Samoa":"AS",
+    "U.S. Virgin Islands":"VI",
+    "United States Virgin Islands":"VI",
+    "Northern Mariana Islands":"MP"
+  };
+
+  // Si ya viene como "NM" o "TX", lo respetamos
+  if (/^[A-Za-z]{2}$/.test(key)) return key.toUpperCase();
+
+  return MAP[key] || "";
+}
+
 
   function deg2rad(x){ return x*Math.PI/180; }
   function haversineMiles(lat1, lon1, lat2, lon2){
@@ -955,7 +1031,10 @@ const jsaServiceSelect = document.getElementById("jsa_serviceSelect");
 
           workAddr.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
           parishInput.value = county;
-          stateCodeInput.value = stateToCode(state) || state;
+          const st = stateToCode(state);
+          stateCodeInput.value = st || "";
+
+
 
           computeAndMaybeSetRT();
           syncOverlays();
